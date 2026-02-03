@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven'   // Make sure Maven is configured in Jenkins (Manage Jenkins → Tools)
+        jdk 'JDK21'     // Java 21 (must exist in Jenkins tools)
+    }
+
     environment {
         IMAGE_NAME = "jeevithabj/my_maven_app"
         IMAGE_TAG  = "latest"
@@ -10,7 +15,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                // Jenkins automatically checks out from GitHub (SCM)
+                checkout scm
                 echo "Code checked out from GitHub"
             }
         }
@@ -23,7 +28,9 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
+                sh """
+                   docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                """
             }
         }
 
@@ -31,13 +38,13 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKERHUB',
-                    passwordVariable: 'DOCKERHUB_PSW'
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh '''
-                        docker login -u $DOCKERHUB -p $DOCKERHUB_PSW
-                        docker push $IMAGE_NAME:$IMAGE_TAG
-                    '''
+                    sh """
+                       echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                       docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
                 }
             }
         }
