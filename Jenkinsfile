@@ -3,44 +3,52 @@ pipeline {
 
     environment {
         IMAGE_NAME = "jeevithabj/my_maven_app"
-        DOCKERHUB = credentials('dockerhub')
+        IMAGE_TAG  = "latest"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'git@github.com:1ms24mc038-Jeevitha/my_maven_app.git'
+                // Jenkins automatically checks out from GitHub (SCM)
+                echo "Code checked out from GitHub"
             }
         }
 
         stage('Build Maven Project') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean package'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:latest .'
+                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
             }
         }
 
         stage('Push Docker Image to Docker Hub') {
             steps {
-                sh 'docker login -u $DOCKERHUB_USR -p $DOCKERHUB_PSW'
-                sh 'docker push $IMAGE_NAME:latest'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKERHUB',
+                    passwordVariable: 'DOCKERHUB_PSW'
+                )]) {
+                    sh '''
+                        docker login -u $DOCKERHUB -p $DOCKERHUB_PSW
+                        docker push $IMAGE_NAME:$IMAGE_TAG
+                    '''
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline executed successfully"
+            echo "✅ Pipeline completed successfully!"
         }
         failure {
-            echo "Pipeline execution failed"
+            echo "❌ Pipeline failed!"
         }
         always {
             cleanWs()
