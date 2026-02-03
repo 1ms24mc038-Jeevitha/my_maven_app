@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven'   // Make sure Maven is configured in Jenkins (Manage Jenkins → Tools)
-        jdk 'JDK21'     // Java 21 (must exist in Jenkins tools)
-    }
-
     environment {
         IMAGE_NAME = "jeevithabj/my_maven_app"
         IMAGE_TAG  = "latest"
